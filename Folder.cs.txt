@@ -1,0 +1,15 @@
+using System;
+using System.Collections.Generic;
+
+namespace FileManager.Infrastructure.Models
+{
+    public class Folder
+    {
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        public string Name { get; set; } = string.Empty;
+
+        // 1-to-many
+        public ICollection<TextFile> Files { get; set; } = new List<TextFile>();
+    }
+}

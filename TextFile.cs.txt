@@ -1,0 +1,18 @@
+using System;
+
+namespace FileManager.Infrastructure.Models
+{
+    public class TextFile
+    {
+        public Guid Id { get; set; } = Guid.NewGuid();
+
+        public string FileName { get; set; } = string.Empty;   // Напр.: "notes"
+        public string Extension { get; set; } = ".txt";         // ".txt", ".md", ".log"
+        public long SizeBytes { get; set; }                     // метадані
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // FK
+        public Guid FolderId { get; set; }
+        public Folder? Folder { get; set; }
+    }
+}

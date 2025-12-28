@@ -1,48 +1,215 @@
-using Notes.Common.Services;
-using Notes.Common.Models;
+using FileManager.Infrastructure.Data;
+using FileManager.Infrastructure.Models;
+using FileManager.Infrastructure.Repositories;
+using FileManager.Services;
+using Microsoft.EntityFrameworkCore;
 
-class Program
+var options = new DbContextOptionsBuilder<FileManagerContext>()
+    .UseSqlite("Data Source=filemanager.db")
+    .Options;
+
+using var context = new FileManagerContext(options);
+
+// створить БД якщо її нема (для демо). Міграції все одно зробиш окремо.
+await context.Database.EnsureCreatedAsync();
+
+// repos
+var folderRepo = new FolderRepository(context);
+var fileRepo = new TextFileRepository(context);
+
+// services
+var folderService = new CrudServiceAsync<Folder>(folderRepo);
+var fileService = new CrudServiceAsync<TextFile>(fileRepo);
+
+while (true)
 {
-    static async Task Main()
+    Console.WriteLine("\n=== FILE MANAGER (Text files) ===");
+    Console.WriteLine("1 - Створити папку");
+    Console.WriteLine("2 - Показати всі папки");
+    Console.WriteLine("3 - Додати текстовий файл");
+    Console.WriteLine("4 - Показати всі файли");
+    Console.WriteLine("5 - Оновити назву файлу");
+    Console.WriteLine("6 - Видалити файл");
+    Console.WriteLine("0 - Вихід");
+    Console.Write("Ваш вибір: ");
+
+    var choice = Console.ReadLine();
+
+    switch (choice)
     {
-        var service = new InMemoryNoteService();
+        case "1":
+            await CreateFolder();
+            break;
 
-        Console.WriteLine("=== Notes Manager Async CRUD ===");
+        case "2":
+            await ShowFolders();
+            break;
 
-        // Створюємо декілька нотаток
-        var notes = new List<Note>
-        {
-            new() { Title = "Shopping", Content = "Buy milk and eggs" },
-            new() { Title = "Work", Content = "Finish lab report" }
-        };
+        case "3":
+            await CreateFile();
+            break;
 
-        foreach (var note in notes)
-            await service.CreateAsync(note);
+        case "4":
+            await ShowFiles();
+            break;
 
-        Console.WriteLine("Created notes:");
+        case "5":
+            await UpdateFileName();
+            break;
 
-        var all = await service.ReadAllAsync();
-        foreach (var n in all)
-            Console.WriteLine(n);
+        case "6":
+            await DeleteFile();
+            break;
 
-        Console.WriteLine("\nUpdating first note...");
-        var first = all.First();
-        first.Content += " + bread";
-        await service.UpdateAsync(first);
+        case "0":
+            return;
 
-        var updated = await service.ReadAsync(first.Id);
-        Console.WriteLine("After update:");
-        Console.WriteLine(updated);
-
-        Console.WriteLine("\nDeleting second note...");
-        var second = all.Last();
-        await service.DeleteAsync(second.Id);
-
-        Console.WriteLine("Remaining notes:");
-        foreach (var n in await service.ReadAllAsync())
-            Console.WriteLine(n);
-
-        Console.WriteLine("Done! Press any key to exit.");
-        Console.ReadKey();
+        default:
+            Console.WriteLine("Невірний вибір.");
+            break;
     }
+}
+
+async Task CreateFolder()
+{
+    Console.Write("Введіть назву папки: ");
+    var name = Console.ReadLine() ?? "";
+
+    if (string.IsNullOrWhiteSpace(name))
+    {
+        Console.WriteLine("Назва не може бути порожня.");
+        return;
+    }
+
+    var folder = new Folder { Name = name };
+
+    await folderService.CreateAsync(folder);
+    await folderService.SaveAsync();
+
+    Console.WriteLine($"✅ Папку створено. Id: {folder.Id}");
+}
+
+async Task ShowFolders()
+{
+    var folders = await folderService.ReadAllAsync();
+    Console.WriteLine("\n--- ПАПКИ ---");
+
+    foreach (var f in folders)
+    {
+        Console.WriteLine($"{f.Id} | {f.Name}");
+    }
+}
+
+async Task CreateFile()
+{
+    Console.Write("Введіть назву файлу (без розширення): ");
+    var fileName = Console.ReadLine() ?? "";
+
+    Console.Write("Введіть розширення (.txt/.md/.log): ");
+    var ext = Console.ReadLine() ?? ".txt";
+
+    Console.Write("Введіть розмір (байти): ");
+    var sizeInput = Console.ReadLine();
+    long size = 0;
+    long.TryParse(sizeInput, out size);
+
+    Console.Write("Введіть Id папки: ");
+    var folderIdInput = Console.ReadLine();
+
+    if (!Guid.TryParse(folderIdInput, out var folderId))
+    {
+        Console.WriteLine("❌ Невірний FolderId.");
+        return;
+    }
+
+    var folder = await folderService.ReadAsync(folderId);
+    if (folder is null)
+    {
+        Console.WriteLine("❌ Папку не знайдено.");
+        return;
+    }
+
+    var file = new TextFile
+    {
+        FileName = fileName,
+        Extension = string.IsNullOrWhiteSpace(ext) ? ".txt" : ext,
+        SizeBytes = size,
+        FolderId = folderId
+    };
+
+    await fileService.CreateAsync(file);
+    await fileService.SaveAsync();
+
+    Console.WriteLine($"✅ Файл додано. Id: {file.Id}");
+}
+
+async Task ShowFiles()
+{
+    var files = await fileService.ReadAllAsync();
+    Console.WriteLine("\n--- ФАЙЛИ ---");
+
+    foreach (var f in files)
+    {
+        var folderName = f.Folder?.Name ?? "(no folder)";
+        Console.WriteLine($"{f.Id} | {f.FileName}{f.Extension} | {f.SizeBytes} bytes | Folder: {folderName}");
+    }
+}
+
+async Task UpdateFileName()
+{
+    Console.Write("Введіть Id файлу: ");
+    var idInput = Console.ReadLine();
+
+    if (!Guid.TryParse(idInput, out var id))
+    {
+        Console.WriteLine("❌ Невірний Id.");
+        return;
+    }
+
+    var file = await fileService.ReadAsync(id);
+    if (file is null)
+    {
+        Console.WriteLine("❌ Файл не знайдено.");
+        return;
+    }
+
+    Console.Write($"Нова назва для {file.FileName}{file.Extension}: ");
+    var newName = Console.ReadLine() ?? "";
+
+    if (string.IsNullOrWhiteSpace(newName))
+    {
+        Console.WriteLine("Назва не може бути порожня.");
+        return;
+    }
+
+    file.FileName = newName;
+
+    await fileService.UpdateAsync(file);
+    await fileService.SaveAsync();
+
+    Console.WriteLine("✅ Назву оновлено.");
+}
+
+async Task DeleteFile()
+{
+    Console.Write("Введіть Id файлу: ");
+    var idInput = Console.ReadLine();
+
+    if (!Guid.TryParse(idInput, out var id))
+    {
+        Console.WriteLine("❌ Невірний Id.");
+        return;
+    }
+
+    var file = await fileService.ReadAsync(id);
+    if (file is null)
+    {
+        Console.WriteLine("❌ Файл не знайдено.");
+        return;
+    }
+
+    await fileService.RemoveAsync(file);
+    await fileService.SaveAsync();
+
+    Console.WriteLine("✅ Файл видалено.");
 }
