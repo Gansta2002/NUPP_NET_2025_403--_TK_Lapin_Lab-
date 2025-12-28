@@ -1,0 +1,48 @@
+using Notes.Common.Services;
+using Notes.Common.Models;
+
+class Program
+{
+    static async Task Main()
+    {
+        var service = new InMemoryNoteService();
+
+        Console.WriteLine("=== Notes Manager Async CRUD ===");
+
+        // Створюємо декілька нотаток
+        var notes = new List<Note>
+        {
+            new() { Title = "Shopping", Content = "Buy milk and eggs" },
+            new() { Title = "Work", Content = "Finish lab report" }
+        };
+
+        foreach (var note in notes)
+            await service.CreateAsync(note);
+
+        Console.WriteLine("Created notes:");
+
+        var all = await service.ReadAllAsync();
+        foreach (var n in all)
+            Console.WriteLine(n);
+
+        Console.WriteLine("\nUpdating first note...");
+        var first = all.First();
+        first.Content += " + bread";
+        await service.UpdateAsync(first);
+
+        var updated = await service.ReadAsync(first.Id);
+        Console.WriteLine("After update:");
+        Console.WriteLine(updated);
+
+        Console.WriteLine("\nDeleting second note...");
+        var second = all.Last();
+        await service.DeleteAsync(second.Id);
+
+        Console.WriteLine("Remaining notes:");
+        foreach (var n in await service.ReadAllAsync())
+            Console.WriteLine(n);
+
+        Console.WriteLine("Done! Press any key to exit.");
+        Console.ReadKey();
+    }
+}

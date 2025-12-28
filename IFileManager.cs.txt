@@ -1,0 +1,11 @@
+namespace FileManagerLib
+{
+    public interface IFileManager
+    {
+        void Create(string path, string content);
+        string Read(string path);
+        void Update(string path, string content);
+        void Delete(string path);
+        IEnumerable<string> ListFiles(string directory);
+    }
+}

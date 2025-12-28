@@ -1,0 +1,59 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+
+namespace FileManagerLib
+{
+    public class FileManager : IFileManager
+    {
+        public void Create(string path, string content)
+        {
+            if (File.Exists(path))
+            {
+                throw new Exception("Файл уже існує");
+            }
+
+            File.WriteAllText(path, content);
+        }
+
+        public string Read(string path)
+        {
+            if (!File.Exists(path))
+            {
+                throw new FileNotFoundException("Файл не знайдено");
+            }
+
+            return File.ReadAllText(path);
+        }
+
+        public void Update(string path, string content)
+        {
+            if (!File.Exists(path))
+            {
+                throw new FileNotFoundException("Файл не знайдено");
+            }
+
+            File.WriteAllText(path, content);
+        }
+
+        public void Delete(string path)
+        {
+            if (!File.Exists(path))
+            {
+                throw new FileNotFoundException("Файл не знайдено");
+            }
+
+            File.Delete(path);
+        }
+
+        public IEnumerable<string> ListFiles(string directory)
+        {
+            if (!Directory.Exists(directory))
+            {
+                throw new DirectoryNotFoundException("Каталог не знайдено");
+            }
+
+            return Directory.GetFiles(directory);
+        }
+    }
+}
