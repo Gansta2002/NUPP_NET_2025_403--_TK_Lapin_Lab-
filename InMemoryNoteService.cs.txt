@@ -1,0 +1,24 @@
+using Notes.Common.Models;
+
+namespace Notes.Common.Services
+{
+    public class InMemoryNoteService : INoteService
+    {
+        private readonly ThreadSafeRepository<Note> _repo = new();
+
+        public Task CreateAsync(Note note)
+            => _repo.AddAsync(note.Id, note);
+
+        public Task<Note?> ReadAsync(Guid id)
+            => _repo.GetAsync(id);
+
+        public Task<IEnumerable<Note>> ReadAllAsync()
+            => _repo.GetAllAsync();
+
+        public Task<bool> UpdateAsync(Note note)
+            => _repo.UpdateAsync(note.Id, note);
+
+        public Task<bool> DeleteAsync(Guid id)
+            => _repo.RemoveAsync(id);
+    }
+}
