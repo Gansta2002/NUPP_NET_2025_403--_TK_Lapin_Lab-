@@ -1,0 +1,20 @@
+using FileManager.Infrastructure.Data;
+using FileManager.Infrastructure.Models;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Threading.Tasks;
+
+namespace FileManager.Infrastructure.Repositories
+{
+    public class FolderRepository : Repository<Folder>
+    {
+        public FolderRepository(FileManagerContext context) : base(context) { }
+
+        public override async Task<Folder?> GetByIdAsync(Guid id)
+        {
+            return await _context.Folders
+                .Include(f => f.Files)
+                .FirstOrDefaultAsync(f => f.Id == id);
+        }
+    }
+}

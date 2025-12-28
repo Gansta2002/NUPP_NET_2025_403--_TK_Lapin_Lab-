@@ -1,0 +1,44 @@
+using FileManager.Infrastructure.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace FileManager.Infrastructure.Data
+{
+    public class FileManagerContext : DbContext
+    {
+        public DbSet<Folder> Folders => Set<Folder>();
+        public DbSet<TextFile> TextFiles => Set<TextFile>();
+
+        public FileManagerContext(DbContextOptions<FileManagerContext> options) : base(options) { }
+
+        // Якщо не використовуєш DI — цей метод підстрахує
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                optionsBuilder.UseSqlite("Data Source=filemanager.db");
+            }
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Folder>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.Name).IsRequired().HasMaxLength(200);
+            });
+
+            modelBuilder.Entity<TextFile>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+
+                entity.Property(x => x.FileName).IsRequired().HasMaxLength(255);
+                entity.Property(x => x.Extension).IsRequired().HasMaxLength(20);
+
+                entity.HasOne(x => x.Folder)
+                      .WithMany(f => f.Files)
+                      .HasForeignKey(x => x.FolderId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+        }
+    }
+}

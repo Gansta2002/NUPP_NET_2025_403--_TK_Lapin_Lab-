@@ -1,0 +1,16 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace FileManager.Services
+{
+    public interface ICrudServiceAsync<T> where T : class
+    {
+        Task<bool> CreateAsync(T element);
+        Task<T?> ReadAsync(Guid id);
+        Task<IEnumerable<T>> ReadAllAsync();
+        Task<bool> UpdateAsync(T element);
+        Task<bool> RemoveAsync(T element);
+        Task<bool> SaveAsync();
+    }
+}

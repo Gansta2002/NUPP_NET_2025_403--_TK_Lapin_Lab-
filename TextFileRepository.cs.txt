@@ -1,0 +1,29 @@
+using FileManager.Infrastructure.Data;
+using FileManager.Infrastructure.Models;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace FileManager.Infrastructure.Repositories
+{
+    public class TextFileRepository : Repository<TextFile>
+    {
+        public TextFileRepository(FileManagerContext context) : base(context) { }
+
+        public override async Task<IEnumerable<TextFile>> GetAllAsync()
+        {
+            return await _context.TextFiles
+                .AsNoTracking()
+                .Include(x => x.Folder)
+                .ToListAsync();
+        }
+
+        public override async Task<TextFile?> GetByIdAsync(Guid id)
+        {
+            return await _context.TextFiles
+                .Include(x => x.Folder)
+                .FirstOrDefaultAsync(x => x.Id == id);
+        }
+    }
+}
