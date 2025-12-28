@@ -1,0 +1,13 @@
+using Notes.Common.Models;
+
+namespace Notes.Common.Services
+{
+    public interface INoteService
+    {
+        Task CreateAsync(Note note);
+        Task<Note?> ReadAsync(Guid id);
+        Task<IEnumerable<Note>> ReadAllAsync();
+        Task<bool> UpdateAsync(Note note);
+        Task<bool> DeleteAsync(Guid id);
+    }
+}
